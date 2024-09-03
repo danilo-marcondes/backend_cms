@@ -12,7 +12,7 @@ app = Flask(__name__)
 load_dotenv()
 
 # Configuração do logger
-handler = RotatingFileHandler('logs/cms.log', maxBytes=100000, backupCount=1)
+handler = RotatingFileHandler('logs/cms.log', maxBytes=100000, backupCount=1, encoding='UTF-8')
 handler.setLevel(logging.INFO)
 formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
 handler.setFormatter(formatter)
@@ -79,8 +79,10 @@ def start_stream():
     
     data = request.json
     user_id = data.get('user_id')
+
     app.logger.info(f"Tentativa de iniciar stream pelo usuário ID: {user_id}")
     
+    #Inicia stream, modulo stream manager
     result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
 
     if result[0] == 201:
@@ -90,6 +92,27 @@ def start_stream():
     
     return jsonify(result[1]), result[0]
     
+@app.route('/stop_stream', methods=['POST'])
+def stop_stream():
+
+    data = request.json
+    user_id = data.get('user_id')
+    stream_id = data.get('stream_id')
+
+    app.logger.info(f"Tentativa de encerrar stream, usuário ID: {user_id}, streamID: {stream_id}")
+    
+    #Encerra stream, modulo stream manager
+    result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
+
+    if result[0] == 200:
+        response = {"message": f"Stream encerrado com sucesso."}
+    elif result[0] == 404:
+        response = {"message": f"Stream não encontrado."}
+    else:
+        response = result[1]
+    
+    return jsonify(response), result[0]
+
 
 if __name__ == '__main__':
     app.run(debug=True)

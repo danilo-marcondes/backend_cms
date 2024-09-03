@@ -1,5 +1,5 @@
 from bson import ObjectId
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import generate_password_hash
 import logging
 
 MAX_STREAMS = 3
@@ -43,19 +43,35 @@ class SessionsModel:
         self.logger = logging.getLogger(__name__)
 
     def start_stream(self, user_id):
+
         active_streams = self.collection.count_documents({'user_id': ObjectId(user_id), 'active': True})
+        
         user = self.db.users.find_one({'_id': ObjectId(user_id)})
         if not user or active_streams >= user['max_streams']:
             self.logger.warning(f"Falha ao iniciar stream: Limite de streams atingido ou usuário inválido. User ID: {user_id}")
             return None
+        
         stream_id = self.collection.insert_one({'user_id': ObjectId(user_id), 'active': True}).inserted_id
-        self.logger.info(f"Stream iniciado com sucesso: Stream ID: {stream_id}, User ID: {user_id}")
-        return stream_id
+        current_streams = active_streams + 1
+        self.logger.info(f"Stream iniciado com sucesso: Stream ID: {stream_id}, User ID: {user_id}, Current Streams: {current_streams}")
+
+        return stream_id, current_streams
 
     def stop_stream(self, stream_id):
-        result = self.collection.update_one({'_id': ObjectId(stream_id)}, {'$set': {'active': False}})
-        if result.matched_count == 0:
-            self.logger.warning(f"Falha ao parar stream: Stream não encontrado ou já parado. Stream ID: {stream_id}")
-            return None
-        self.logger.info(f"Stream parado com sucesso: Stream ID: {stream_id}")
-        return result
+
+        steam_is_active = self.collection.find_one({'_id': ObjectId(stream_id), 'active' : True})
+        
+        if steam_is_active != None:
+            result = self.collection.update_one({'_id': ObjectId(stream_id)}, {'$set': {'active': False}})
+        
+            if result.matched_count == 0:
+                self.logger.warning(f"Falha ao parar stream. Stream ID: {stream_id}")
+                return None
+            
+            self.logger.info(f"Stream parado com sucesso: Stream ID: {stream_id}")
+            return result
+        
+        self.logger.warning(f"Falha ao parar stream: Stream não encontrado ou já parado. Stream ID: {stream_id}")
+        return None
+        
+            

@@ -1,24 +1,32 @@
 from bson import ObjectId
 from werkzeug.security import generate_password_hash, check_password_hash
 
+MAX_STREAMS = 3
+
 class UserModel:
     def __init__(self, db):
         self.db = db
         self.collection = db.users
 
-    def create_user(self, username, first_name, last_name, country, email, password):
-        if self.collection.find_one({'username': username}):
+    def create_user(self, first_name, last_name, country, email, password):
+        
+        #Procura se o usuário já existe
+        if self.collection.find_one({'email': email}):
             return None
+        
+        #Criptografa a senha
         hashed_password = generate_password_hash(password)
+        
+        #Insere o novo usuário no BD
         user_id = self.collection.insert_one({
-            'username': username,
+            'email': email,
             'first_name': first_name,
             'last_name': last_name,
             'country': country,
-            'email': email,
             'password': hashed_password,
-            'max_streams': 3
+            'max_streams': MAX_STREAMS
         }).inserted_id
+        
         return user_id
 
     def get_user_by_username(self, username):

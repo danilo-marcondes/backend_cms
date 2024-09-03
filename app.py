@@ -33,19 +33,27 @@ except Exception as e:
 # Criando de instâncias dos modelos
 user_model = UserModel(db)
 
-
+#Rota para registrar um novo usuário
 @app.route('/register', methods=['POST'])
 def register():
+    
     data = request.json
-    username = data.get('username')
+    email = data.get('email')
     first_name = data.get('first_name')
     last_name = data.get('last_name')
     country = data.get('country')
-    email = data.get('email')
     password = data.get('password')
-    user_id = user_model.create_user(username, first_name, last_name, country, email, password)
+
+    #Valida campos obrigatórios
+    if email == None or first_name == None or last_name == None or country == None or password == None:
+        return jsonify({'message': 'Invalid data.'}), 400
+    
+    user_id = user_model.create_user(first_name, last_name, country, email, password)
+    
+    #Verifica se o usuário já existe
     if not user_id:
         return jsonify({"message": "User already exists"}), 400
+    
     return jsonify({"message": "User registered", "user_id": str(user_id)}), 201
 
 

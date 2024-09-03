@@ -1,6 +1,6 @@
+import models, stream_manager
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
-from models import UserModel
 from dotenv import load_dotenv
 import os
 import logging
@@ -44,7 +44,8 @@ except Exception as e:
 
 
 # Criando de instâncias dos modelos
-user_model = UserModel(db)
+user_model = models.UserModel(db)
+sessions_model = models.SessionsModel(db)
 
 #Rota para registrar um novo usuário
 @app.route('/register', methods=['POST'])
@@ -73,7 +74,22 @@ def register():
     return jsonify({"message": "User registered", "user_id": str(user_id)}), 201
 
 
+@app.route('/start_stream', methods=['POST'])
+def start_stream():
+    
+    data = request.json
+    user_id = data.get('user_id')
+    app.logger.info(f"Tentativa de iniciar stream pelo usuário ID: {user_id}")
+    
+    result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
 
+    if result[0] == 201:
+        app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
+    else:
+        app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
+    
+    return jsonify(result[1]), result[0]
+    
 
 if __name__ == '__main__':
     app.run(debug=True)

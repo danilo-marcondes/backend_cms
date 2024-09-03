@@ -48,7 +48,7 @@ user_model = models.UserModel(db)
 sessions_model = models.SessionsModel(db)
 
 #Rota para registrar um novo usuário
-@app.route('/register', methods=['POST'])
+@app.route('/user/register', methods=['POST'])
 def register():
     
     data = request.json
@@ -73,6 +73,18 @@ def register():
     app.logger.info(f"Usuário registrado com sucesso: {data}")
     return jsonify({"message": "User registered", "user_id": str(user_id)}), 201
 
+@app.route('/user/stream_limit', methods=['PATCH'])
+def update_user_streams():
+
+    data = request.json
+    user_id = data.get('user_id')
+    max_streams = data.get('stream_limit')
+
+    result = stream_manager.update_stream_limit(user_id=user_id, stream_limit=max_streams, user_model=user_model, stream_model=sessions_model)
+    if result[0] == 401:
+        app.logger.warn(f'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual. | user_id: {user_id}')
+
+    return jsonify(result[1]), result[0]
 
 @app.route('/start_stream', methods=['POST'])
 def start_stream():

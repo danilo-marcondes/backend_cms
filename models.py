@@ -8,6 +8,7 @@ class UserModel:
     def __init__(self, db):
         self.db = db
         self.collection = db.users
+        self.logger = logging.getLogger(__name__)
 
     def create_user(self, first_name, last_name, country, email, password):
         
@@ -35,6 +36,18 @@ class UserModel:
 
     def get_user_by_id(self, user_id):
         return self.collection.find_one({'_id': ObjectId(user_id)})
+    
+    def update_user_stream_limit(self, user_id, stream_limit):
+        
+        result = self.collection.update_one({'_id' : ObjectId(user_id)}, {'$set' : {'max_streams': stream_limit}})
+
+        if result.matched_count == 0:
+            self.logger.warning(f"Falha ao atualizar limite de streams do usuário: {user_id}")
+            return None
+
+        self.logger.info(f"limite de streams atualizado para {stream_limit}. Usuário: {user_id}")
+
+        return result
 
 class SessionsModel:
     def __init__(self, db):
@@ -42,14 +55,23 @@ class SessionsModel:
         self.collection = db.sessions
         self.logger = logging.getLogger(__name__)
 
+    def read_sessions(self, user_id):
+        
+        #Retorna a quantidade de sessões do usuário
+        active_streams = self.collection.count_documents({'user_id': ObjectId(user_id), 'active': True})
+        if active_streams == None:
+            active_streams = 0
+        print(f'Active streams: {active_streams} | user: {user_id}')
+        return active_streams
+    
     def start_stream(self, user_id):
 
-        active_streams = self.collection.count_documents({'user_id': ObjectId(user_id), 'active': True})
-        
+        active_streams = self.read_sessions(user_id)
+
         user = self.db.users.find_one({'_id': ObjectId(user_id)})
         if not user or active_streams >= user['max_streams']:
             self.logger.warning(f"Falha ao iniciar stream: Limite de streams atingido ou usuário inválido. User ID: {user_id}")
-            return None
+            return None, active_streams
         
         stream_id = self.collection.insert_one({'user_id': ObjectId(user_id), 'active': True}).inserted_id
         current_streams = active_streams + 1
@@ -73,5 +95,4 @@ class SessionsModel:
         
         self.logger.warning(f"Falha ao parar stream: Stream não encontrado ou já parado. Stream ID: {stream_id}")
         return None
-        
-            
+

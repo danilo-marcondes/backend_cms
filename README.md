@@ -22,3 +22,6 @@ Dados para conexão com o BD <br>
 
 Executar o app.py: <br>
   > python app.py
+
+Swagger: <bvr>
+ > http://localhost:5000/apidocs/

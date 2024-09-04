@@ -6,6 +6,7 @@ import os
 import logging
 from logging.handlers import RotatingFileHandler
 from flasgger import Swagger, swag_from
+import threading
 
 app = Flask(__name__)
 
@@ -50,10 +51,18 @@ except Exception as e:
     app.logger.error(f"Falha na conexão ao MongoDB Atlas: {e}")
     raise
 
-
 # Criando de instâncias dos modelos
 user_model = models.UserModel(db)
 sessions_model = models.SessionsModel(db)
+
+
+# Criar um dicionário de locks por usuário (Técnica Mutex)
+user_locks = {}
+
+def get_user_lock(user_id):
+    if user_id not in user_locks:
+        user_locks[user_id] = threading.Lock()
+    return user_locks[user_id]
 
 #Rota para registrar um novo usuário
 @app.route('/user/register', methods=['POST'])
@@ -90,11 +99,14 @@ def update_user_streams():
     user_id = data.get('user_id')
     max_streams = data.get('stream_limit')
 
-    result = stream_manager.update_stream_limit(user_id=user_id, stream_limit=max_streams, user_model=user_model, stream_model=sessions_model)
-    if result[0] == 401:
-        app.logger.warn(f'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual. | user_id: {user_id}')
+    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
+    user_lock = get_user_lock(user_id)
+    with user_lock:
+        result = stream_manager.update_stream_limit(user_id=user_id, stream_limit=max_streams, user_model=user_model, stream_model=sessions_model)
+        if result[0] == 401:
+            app.logger.warn(f'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual. | user_id: {user_id}')
 
-    return jsonify(result[1]), result[0]
+        return jsonify(result[1]), result[0]
 
 @app.route('/start_stream', methods=['POST'])
 @swag_from('docs/start.yaml')

@@ -28,7 +28,7 @@ def update_stream_limit(user_id=None, stream_limit=None, user_model=None, stream
     
     active_streams = stream_model.read_sessions(user_id)
 
-    if active_streams >= stream_limit:
+    if active_streams > stream_limit:
         return 400, {'Message' : 'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual.'}
     
     result = user_model.update_user_stream_limit(user_id, stream_limit)

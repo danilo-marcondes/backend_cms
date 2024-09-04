@@ -117,15 +117,19 @@ def start_stream():
 
     app.logger.info(f"Tentativa de iniciar stream pelo usuário ID: {user_id}")
     
-    #Inicia stream, modulo stream manager
-    result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
+    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
+    user_lock = get_user_lock(user_id)
+    with user_lock:
 
-    if result[0] == 201:
-        app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
-    else:
-        app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
-    
-    return jsonify(result[1]), result[0]
+        #Inicia stream, modulo stream manager
+        result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
+
+        if result[0] == 201:
+            app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
+        else:
+            app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
+        
+        return jsonify(result[1]), result[0]
     
 @app.route('/stop_stream', methods=['POST'])
 @swag_from('docs/stop.yaml')
@@ -137,17 +141,21 @@ def stop_stream():
 
     app.logger.info(f"Tentativa de encerrar stream, usuário ID: {user_id}, streamID: {stream_id}")
     
-    #Encerra stream, modulo stream manager
-    result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
+    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
+    user_lock = get_user_lock(user_id)
+    with user_lock:
 
-    if result[0] == 200:
-        response = {"message": f"Stream encerrado com sucesso."}
-    elif result[0] == 404:
-        response = {"message": f"Stream não encontrado."}
-    else:
-        response = result[1]
-    
-    return jsonify(response), result[0]
+        #Encerra stream, modulo stream manager
+        result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
+
+        if result[0] == 200:
+            response = {"message": f"Stream encerrado com sucesso."}
+        elif result[0] == 404:
+            response = {"message": f"Stream não encontrado."}
+        else:
+            response = result[1]
+        
+        return jsonify(response), result[0]
 
 
 if __name__ == '__main__':

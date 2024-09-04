@@ -7,7 +7,7 @@
     source venv/bin/activate  # No Windows use venv\Scripts\activate <br>
     
 Instalar dependências<br>
-  > pip install flask pymongo dotenv <br>
+  > pip install -r requirements.txt <br>
 
 Para o banco de dados, está sendo utilizado Atlas MongoDB. Configurar dados do cluster no arquivo .env: <br>
 

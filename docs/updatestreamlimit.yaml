@@ -1,0 +1,26 @@
+tags:
+  - Update User Stream Limit
+summary: Altera o limite de streams simultaneos para o usuário
+description: End-point para alterar o limite de streams simultaneos para o usuário
+parameters:
+  - in: body
+    name: body
+    required: true
+    description: Dados do usuário
+    schema:
+      type: object
+      required:
+        - user_id
+        - stream_limit
+      properties:
+        user_id:
+          type: string
+          description: ID do usuário
+        stream_limit:
+          type: integer
+          description: Número máximo de streams simultaneos
+responses:
+  200:
+    description: Limite de streams alterado com sucesso
+  400:
+    description: Falha ao alterar o limite de streams

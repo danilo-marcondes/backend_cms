@@ -1,0 +1,38 @@
+tags:
+  - Users
+summary: Registra um novo usuário.
+description: End-point para registrar novos usuários no sistema.
+parameters:
+  - in: body
+    name: body
+    required: true
+    description: Dados do novo usuário
+    schema:
+      type: object
+      required:
+        - first_name
+        - last_name
+        - country
+        - email
+        - password
+      properties:
+        first_name:
+          type: string
+          description: Primeiro nome
+        last_name:
+          type: string
+          description: Sobrenome
+        country:
+          type: string
+          description: País de origem
+        email:
+          type: string
+          description: Endereço de e-mail
+        password:
+          type: string
+          description: Senha do usuário
+responses:
+  201:
+    description: Usuário registrado com sucesso
+  400:
+    description: Usuário já existe

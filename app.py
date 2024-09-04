@@ -5,8 +5,16 @@ from dotenv import load_dotenv
 import os
 import logging
 from logging.handlers import RotatingFileHandler
+from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
+
+# Configuração do Swagger
+app.config['SWAGGER'] = {
+    'title': 'Concurrent Streaming Manager API',
+    'uiversion': 3
+}
+swagger = Swagger(app)
 
 #Carregando variáveis
 load_dotenv()
@@ -49,6 +57,7 @@ sessions_model = models.SessionsModel(db)
 
 #Rota para registrar um novo usuário
 @app.route('/user/register', methods=['POST'])
+@swag_from('docs/register.yaml')
 def register():
     
     data = request.json
@@ -74,6 +83,7 @@ def register():
     return jsonify({"message": "User registered", "user_id": str(user_id)}), 201
 
 @app.route('/user/stream_limit', methods=['PATCH'])
+@swag_from('docs/updatestreamlimit.yaml')
 def update_user_streams():
 
     data = request.json
@@ -87,6 +97,7 @@ def update_user_streams():
     return jsonify(result[1]), result[0]
 
 @app.route('/start_stream', methods=['POST'])
+@swag_from('docs/start.yaml')
 def start_stream():
     
     data = request.json
@@ -105,6 +116,7 @@ def start_stream():
     return jsonify(result[1]), result[0]
     
 @app.route('/stop_stream', methods=['POST'])
+@swag_from('docs/stop.yaml')
 def stop_stream():
 
     data = request.json

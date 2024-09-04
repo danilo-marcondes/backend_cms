@@ -1,0 +1,26 @@
+tags:
+  - Stop Stream
+summary: Para o stream de um conteúdo.
+description: End-point para encerrar um streaming para um usuário
+parameters:
+  - in: body
+    name: body
+    required: true
+    description: Dados do stream
+    schema:
+      type: object
+      required:
+        - user_id
+        - stream_id
+      properties:
+        user_id:
+          type: string
+          description: ID do usuário
+        stream_id:
+          type: string
+          description: ID do usuário
+responses:
+  200:
+    description: Stream encerrado com sucesso
+  400:
+    description: Falha ao encerrar o stream

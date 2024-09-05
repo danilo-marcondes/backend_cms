@@ -2,15 +2,13 @@ from bson import ObjectId
 from werkzeug.security import generate_password_hash
 import logging
 
-MAX_STREAMS = 3
-
 class UserModel:
     def __init__(self, db):
         self.db = db
         self.collection = db.users
         self.logger = logging.getLogger(__name__)
 
-    def create_user(self, first_name, last_name, country, email, password):
+    def create_user(self, first_name, last_name, country, email, password, max_streams):
         
         #Procura se o usuário já existe
         if self.collection.find_one({'email': email}):
@@ -26,7 +24,7 @@ class UserModel:
             'last_name': last_name,
             'country': country,
             'password': hashed_password,
-            'max_streams': MAX_STREAMS
+            'max_streams': max_streams
         }).inserted_id
         
         return user_id

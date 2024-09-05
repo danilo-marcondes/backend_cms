@@ -1,5 +1,8 @@
 from logs import logger_config
 
+#Valor padrão para max streams
+MAX_STREAMS = 3
+
 app_logger = logger_config.setup_logger('user_manager', 'logs/user_manager.log')
 
 def register_user(user_model=None, data=None):
@@ -23,7 +26,7 @@ def register_user(user_model=None, data=None):
         app_logger.warn(f"Erro ao tentar registrar novo usuário. Usuário já existe: {data}")
         return 403, {'message': f'Erro ao tentar registrar novo usuário. Usuário já existe: {email}'}
     
-    user_id = user_model.create_user(first_name, last_name, country, email, password)
+    user_id = user_model.create_user(first_name, last_name, country, email, password, MAX_STREAMS)
     if not user_id:
         app_logger.warn(f"Falha ao criar usuário: {data}")
         return 400, {'message': 'Falha ao criar usuário'}

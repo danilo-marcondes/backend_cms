@@ -1,9 +1,9 @@
 # CMS Básico
-
-### Passos para instalar o projeto ###
 O Concurrent Streaming Manager (CSM) é um módulo essencial em sistemas de streaming,
 responsável por controlar a quantidade de streams simultâneos a que um usuário tem
 acesso.
+
+### Passos para instalar o projeto ###
 
  Preparando o ambiente virtual e instalando as dependências:<br>
   ```
@@ -15,8 +15,8 @@ Instalar dependências<br>
   ```
     pip install -r requirements.txt
   ```
-
-Para o banco de dados, está sendo utilizado Atlas MongoDB. Configurar dados do cluster no arquivo .env: <br>
+<br>
+Para o banco de dados, está sendo utilizado Atlas MongoDB. Configurar dados do cluster no arquivo .env:
 
 ### Dados para conexão com o BD ###
   ```

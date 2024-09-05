@@ -1,11 +1,13 @@
 import stream_manager
 import threading
-from model import session, user
-from flask import Flask, request, jsonify
-from flasgger import Swagger, swag_from
+
 from database import get_db
 from controller import user_manager
 from logs import logger_config
+from model import session, user
+
+from flask import Flask, request, jsonify
+from flasgger import Swagger, swag_from
 
 app = Flask(__name__)
 
@@ -16,7 +18,7 @@ app.config['SWAGGER'] = {
 }
 swagger = Swagger(app)
 
-app_logger = logger_config.setup_logger('logs/app.log')
+app_logger = logger_config.setup_logger('app', 'logs/app.log')
 
 app_logger.info("Inicializando o BD")
 db = get_db()
@@ -37,10 +39,13 @@ def get_user_lock(user_id):
 @app.route('/user/register', methods=['POST'])
 @swag_from('docs/register.yaml')
 def register():
+    
     app_logger.info(f'/user/register: {request.json}')
     data = request.json
+
     result = user_manager.register_user(user_model, data)
     app_logger.info(f'/user/register: {result}')
+    
     return jsonify(result[1]), result[0]
 
 #Rota para atualizar o limite de streams de um usuário
@@ -48,18 +53,13 @@ def register():
 @swag_from('docs/updatestreamlimit.yaml')
 def update_user_streams():
 
+    app_logger.info(f'/user/stream_limit: {request.json}')
     data = request.json
-    user_id = data.get('user_id')
-    max_streams = data.get('stream_limit')
 
-    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
-    user_lock = get_user_lock(user_id)
-    with user_lock:
-        result = stream_manager.update_stream_limit(user_id=user_id, stream_limit=max_streams, user_model=user_model, stream_model=sessions_model)
-        if result[0] == 401:
-            app.logger.warn(f'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual. | user_id: {user_id}')
-
-        return jsonify(result[1]), result[0]
+    result = user_manager.update_stream_limit(user_model, sessions_model, data)
+    app_logger.info(f'/user/stream_limit: {result}')
+    
+    return jsonify(result[1]), result[0]
 
 #Rota para iniciar um stream
 @app.route('/start_stream', methods=['POST'])

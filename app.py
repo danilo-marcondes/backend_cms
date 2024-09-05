@@ -58,7 +58,6 @@ def update_user_streams():
 def start_stream():
     
     data = request.json
-    
     app_logger.info(f'/user/start_stream: {data}')
 
     #Inicia stream, modulo stream manager
@@ -74,22 +73,14 @@ def start_stream():
 def stop_stream():
 
     data = request.json
-    user_id = data.get('user_id')
-    stream_id = data.get('stream_id')
-
-    app.logger.info(f"Tentativa de encerrar stream, usuário ID: {user_id}, streamID: {stream_id}")
+    app_logger.info(f'/user/stop_stream: {data}')
     
     #Encerra stream, modulo stream manager
-    result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
+    result = stream_manager.manage_stream('stop', user_model=user_model, stream_model=sessions_model, data=data)
 
-    if result[0] == 200:
-        response = {"message": f"Stream encerrado com sucesso."}
-    elif result[0] == 404:
-        response = {"message": f"Stream não encontrado."}
-    else:
-        response = result[1]
-    
-    return jsonify(response), result[0]
+    app_logger.info(f'/user/stop_stream: {result}')
+
+    return jsonify(result[1]), result[0]
 
 
 if __name__ == '__main__':

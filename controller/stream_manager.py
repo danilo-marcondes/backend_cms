@@ -5,12 +5,18 @@ app_logger = logger_config.setup_logger('stream_manager', 'logs/stream_manager.l
 def manage_stream(action, stream_id=None, user_model=None, stream_model=None, data=None):
 
     user_id = data.get('user_id')
+    stream_id = data.get('stream_id')
 
+    if not user_model or not stream_model:
+        app_logger.error(f"Erro ao iniciar stream. Missing dependencies.")
+        return 500, {'message': 'Missing dependencies'}
+    
     if action == 'start':
-        if not user_model or not stream_model:
-            app_logger.error(f"Erro ao iniciar stream. Missing dependencies.")
-            return 500, {'message': 'Missing dependencies'}
         
+        if not user_id:
+            app_logger.warn(f"Erro ao iniciar stream. Falta user_id: {data}")
+            return 404, {'message': 'Missing user_id'}
+    
         user = user_model.get_user_by_id(user_id)
         if not user:
             app_logger.warn(f"User not found: {user_id}")
@@ -25,11 +31,18 @@ def manage_stream(action, stream_id=None, user_model=None, stream_model=None, da
         return 201, {'message': 'Stream started', 'stream_id': str(stream_id), 'current_streams' : current_streams}
     
     elif action == 'stop':
-        if not stream_model:
-            return 500, {'message': 'Missing dependencies'}
+        
+        if not stream_id:
+            app_logger.warn(f"Erro ao encerrar stream. Falta stream_id: {data}")
+            return 400, {'message': 'Error. Missing stream_id'}
+        
         result = stream_model.stop_stream(stream_id)
         if not result:
-            return 404, {'message': 'Stream not found'}
-        return 200, {'message': 'Stream stopped'}
+            app_logger.warn(f"Stream não encontrado stream_id: {stream_id}")
+            return 404, {'message': 'Stream not found or already stopped.'}
+
+        app_logger.warn(f"Stream encerrado stream_id: {stream_id}")
+        return 200, {'message': f'Stream stopped: {stream_id}'}
     
+    app_logger.warn(f"Ação inválida em manage_stream: action={action} | {data}")
     return 400, {'message': 'Invalid action'}

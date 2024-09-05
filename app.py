@@ -31,8 +31,8 @@ sessions_model = session.SessionsModel(db)
 @swag_from('docs/register.yaml')
 def register():
     
-    app_logger.info(f'/user/register: {request.json}')
     data = request.json
+    app_logger.info(f'/user/register: {data}')
 
     result = user_manager.register_user(user_model, data)
     app_logger.info(f'/user/register: {result}')
@@ -44,8 +44,8 @@ def register():
 @swag_from('docs/updatestreamlimit.yaml')
 def update_user_streams():
 
-    app_logger.info(f'/user/stream_limit: {request.json}')
     data = request.json
+    app_logger.info(f'/user/stream_limit: {data}')
 
     result = user_manager.update_stream_limit(user_model, sessions_model, data)
     app_logger.info(f'/user/stream_limit: {result}')
@@ -58,17 +58,13 @@ def update_user_streams():
 def start_stream():
     
     data = request.json
-    user_id = data.get('user_id')
-
-    app.logger.info(f"Tentativa de iniciar stream pelo usuário ID: {user_id}")
+    
+    app_logger.info(f'/user/start_stream: {data}')
 
     #Inicia stream, modulo stream manager
-    result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
-
-    if result[0] == 201:
-        app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
-    else:
-        app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
+    result = stream_manager.manage_stream('start', user_model=user_model, stream_model=sessions_model, data=data)
+    
+    app_logger.info(f'/user/start_stream: {result}')
     
     return jsonify(result[1]), result[0]
 

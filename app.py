@@ -1,12 +1,11 @@
-import models, stream_manager
-from flask import Flask, request, jsonify
-from pymongo import MongoClient
-from dotenv import load_dotenv
-import os
-import logging
-from logging.handlers import RotatingFileHandler
-from flasgger import Swagger, swag_from
+import stream_manager
 import threading
+from model import session, user
+from flask import Flask, request, jsonify
+from flasgger import Swagger, swag_from
+from database import get_db
+from controller import user_manager
+from logs import logger_config
 
 app = Flask(__name__)
 
@@ -17,44 +16,14 @@ app.config['SWAGGER'] = {
 }
 swagger = Swagger(app)
 
-#Carregando variáveis
-load_dotenv()
+app_logger = logger_config.setup_logger('logs/app.log')
 
-# Configuração do logger
-handler = RotatingFileHandler('logs/cms.log', maxBytes=100000, backupCount=1, encoding='UTF-8')
-handler.setLevel(logging.INFO)
-formatter = logging.Formatter('%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]')
-handler.setFormatter(formatter)
-app.logger.addHandler(handler)
-
-app.logger.setLevel(logging.INFO)
-
-# Configuração da URI do MongoDB Atlas
-app.logger.info("Configurando o BD")
-db_user = os.getenv('DB_USERNAME')
-db_pass = os.getenv('DB_PASSWORD')
-db_host = os.getenv('DB_HOST')
-db_client = MongoClient(f'mongodb+srv://{db_user}:{db_pass}@{db_host}/?retryWrites=true&w=majority')
-
-# Inicialize o BD
-app.logger.info("Inicializando o BD")
-db_name = os.getenv('DB_NAME')
-db_collection = os.getenv('DB_COLLECTION')
-db = db_client[db_name]
-collection = db[db_collection]
-
-# Verifique se a conexão foi bem-sucedida
-try:
-    db.command('ping')
-    app.logger.info("Conectado ao MongoDB Atlas com sucesso!")
-except Exception as e:
-    app.logger.error(f"Falha na conexão ao MongoDB Atlas: {e}")
-    raise
+app_logger.info("Inicializando o BD")
+db = get_db()
 
 # Criando de instâncias dos modelos
-user_model = models.UserModel(db)
-sessions_model = models.SessionsModel(db)
-
+user_model = user.UserModel(db)
+sessions_model = session.SessionsModel(db)
 
 # Criar um dicionário de locks por usuário (Técnica Mutex)
 user_locks = {}
@@ -68,29 +37,13 @@ def get_user_lock(user_id):
 @app.route('/user/register', methods=['POST'])
 @swag_from('docs/register.yaml')
 def register():
-    
+    app_logger.info(f'/user/register: {request.json}')
     data = request.json
-    email = data.get('email')
-    first_name = data.get('first_name')
-    last_name = data.get('last_name')
-    country = data.get('country')
-    password = data.get('password')
+    result = user_manager.register_user(user_model, data)
+    app_logger.info(f'/user/register: {result}')
+    return jsonify(result[1]), result[0]
 
-    #Valida campos obrigatórios
-    if email == None or first_name == None or last_name == None or country == None or password == None:
-        app.logger.warn(f"Erro ao tentar registrar novo usuário: {data}")
-        return jsonify({'message': 'Invalid data.'}), 400
-    
-    user_id = user_model.create_user(first_name, last_name, country, email, password)
-    
-    #Verifica se o usuário já existe
-    if not user_id:
-        app.logger.warn(f"Erro ao tentar registrar novo usuário. Usuário já existe: {data}")
-        return jsonify({"message": "User already exists"}), 400
-    
-    app.logger.info(f"Usuário registrado com sucesso: {data}")
-    return jsonify({"message": "User registered", "user_id": str(user_id)}), 201
-
+#Rota para atualizar o limite de streams de um usuário
 @app.route('/user/stream_limit', methods=['PATCH'])
 @swag_from('docs/updatestreamlimit.yaml')
 def update_user_streams():
@@ -108,6 +61,7 @@ def update_user_streams():
 
         return jsonify(result[1]), result[0]
 
+#Rota para iniciar um stream
 @app.route('/start_stream', methods=['POST'])
 @swag_from('docs/start.yaml')
 def start_stream():
@@ -130,7 +84,8 @@ def start_stream():
             app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
         
         return jsonify(result[1]), result[0]
-    
+
+#Rota para encerrar um stream
 @app.route('/stop_stream', methods=['POST'])
 @swag_from('docs/stop.yaml')
 def stop_stream():

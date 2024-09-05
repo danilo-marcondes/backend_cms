@@ -1,8 +1,6 @@
 from bson import ObjectId
-from werkzeug.security import generate_password_hash
 import logging
 
-MAX_STREAMS = 3
 
 class SessionsModel:
     def __init__(self, db):

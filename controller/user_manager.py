@@ -17,15 +17,19 @@ def register_user(user_model=None, data=None):
         app_logger.warn(f"Erro ao tentar registrar novo usuário: {data}")
         return 400, {'message': 'Invalid data'}
 
-    user_id = user_model.create_user(first_name, last_name, country, email, password)
-    
     #Verifica se o usuário já existe
-    if not user_id:
+    user_exists = user_model.get_user_by_email(email)
+    if user_exists:
         app_logger.warn(f"Erro ao tentar registrar novo usuário. Usuário já existe: {data}")
-        return 400, {'message': 'User already exists'}
-
+        return 403, {'message': f'Erro ao tentar registrar novo usuário. Usuário já existe: {email}'}
+    
+    user_id = user_model.create_user(first_name, last_name, country, email, password)
+    if not user_id:
+        app_logger.warn(f"Falha ao criar usuário: {data}")
+        return 400, {'message': 'Falha ao criar usuário'}
+    
     app_logger.info(f"Usuário registrado com sucesso: {data}")
-    return 201, {'message': 'User registered', 'user_id': str(user_id)}
+    return 201, {'message': 'Usuário registrado', 'user_id': str(user_id)}
 
 
 def update_stream_limit(user_model=None, stream_model=None, data=None):

@@ -1,8 +1,7 @@
-import stream_manager
-import threading
+import controller.stream_manager as stream_manager
+import controller.user_manager as user_manager
 
 from database import get_db
-from controller import user_manager
 from logs import logger_config
 from model import session, user
 
@@ -26,14 +25,6 @@ db = get_db()
 # Criando de instâncias dos modelos
 user_model = user.UserModel(db)
 sessions_model = session.SessionsModel(db)
-
-# Criar um dicionário de locks por usuário (Técnica Mutex)
-user_locks = {}
-
-def get_user_lock(user_id):
-    if user_id not in user_locks:
-        user_locks[user_id] = threading.Lock()
-    return user_locks[user_id]
 
 #Rota para registrar um novo usuário
 @app.route('/user/register', methods=['POST'])
@@ -70,20 +61,16 @@ def start_stream():
     user_id = data.get('user_id')
 
     app.logger.info(f"Tentativa de iniciar stream pelo usuário ID: {user_id}")
+
+    #Inicia stream, modulo stream manager
+    result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
+
+    if result[0] == 201:
+        app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
+    else:
+        app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
     
-    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
-    user_lock = get_user_lock(user_id)
-    with user_lock:
-
-        #Inicia stream, modulo stream manager
-        result = stream_manager.manage_stream('start', user_id=user_id, user_model=user_model, stream_model=sessions_model)
-
-        if result[0] == 201:
-            app.logger.info(f"Stream iniciado com sucesso para o usuário ID: {user_id}, Stream ID: {result[1]['stream_id']}")
-        else:
-            app.logger.warning(f"Falha ao iniciar stream para o usuário ID: {user_id}")
-        
-        return jsonify(result[1]), result[0]
+    return jsonify(result[1]), result[0]
 
 #Rota para encerrar um stream
 @app.route('/stop_stream', methods=['POST'])
@@ -96,21 +83,17 @@ def stop_stream():
 
     app.logger.info(f"Tentativa de encerrar stream, usuário ID: {user_id}, streamID: {stream_id}")
     
-    # Bloqueia o user para prenivir multiplas atualizações ao mesmo tempo
-    user_lock = get_user_lock(user_id)
-    with user_lock:
+    #Encerra stream, modulo stream manager
+    result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
 
-        #Encerra stream, modulo stream manager
-        result = stream_manager.manage_stream('stop', user_id=user_id, stream_id=stream_id, user_model=user_model, stream_model=sessions_model)
-
-        if result[0] == 200:
-            response = {"message": f"Stream encerrado com sucesso."}
-        elif result[0] == 404:
-            response = {"message": f"Stream não encontrado."}
-        else:
-            response = result[1]
-        
-        return jsonify(response), result[0]
+    if result[0] == 200:
+        response = {"message": f"Stream encerrado com sucesso."}
+    elif result[0] == 404:
+        response = {"message": f"Stream não encontrado."}
+    else:
+        response = result[1]
+    
+    return jsonify(response), result[0]
 
 
 if __name__ == '__main__':

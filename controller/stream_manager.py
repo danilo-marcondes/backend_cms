@@ -1,6 +1,11 @@
+from logs import logger_config
+
+app_logger = logger_config.setup_logger('stream_manager', 'logs/stream_manager.log')
+
 def manage_stream(action, user_id=None, stream_id=None, user_model=None, stream_model=None):
     if action == 'start':
         if not user_model or not stream_model:
+            app_logger.error(f"Erro ao iniciar stream. Missing dependencies.")
             return 500, {'message': 'Missing dependencies'}
         user = user_model.get_user_by_id(user_id)
         if not user:

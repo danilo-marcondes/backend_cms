@@ -11,6 +11,7 @@ def register_user(user_model=None, data=None):
 
     #Verifica se os dados são válidos
     if not user_model:
+        app_logger.error(f"Erro ao iniciar stream. Missing dependencies: {data}")
         return 500, {'message': 'Missing dependencies'}
     if not email or not first_name or not last_name or not country or not password:
         app_logger.warn(f"Erro ao tentar registrar novo usuário: {data}")
@@ -34,6 +35,7 @@ def update_stream_limit(user_model=None, stream_model=None, data=None):
 
     #Verifica se os dados são válidos
     if not user_model or not stream_model:
+        app_logger.error(f"Erro ao iniciar stream. Missing dependencies: {data}")
         return 500, {'message': 'Missing dependencies'}
     if not user_id or not stream_limit:
         return 400, {'message' : 'Invalid data'}
@@ -41,9 +43,11 @@ def update_stream_limit(user_model=None, stream_model=None, data=None):
     active_streams = stream_model.read_sessions(user_id)
 
     if active_streams > stream_limit:
+        app_logger.info(f"Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual: {user_id}")
         return 400, {'Message' : 'Não foi possível alterar o limite. O novo limite é inferior ao número de streams simultâneos atual.'}
     
     result = user_model.update_user_stream_limit(user_id, stream_limit)
     if not result:
+        app_logger.info(f"limite de streams atualizado, max_streams: {stream_limit}, user_id: {user_id}")
         return 400, {'message': 'Falha ao atualizar limite de streams do usuário'}
-    return 200, {'message': 'limite de streams atualizado'}
+    return 200, {'message': 'limite de streams atualizado', 'max_streams': stream_limit, 'user_id': user_id}

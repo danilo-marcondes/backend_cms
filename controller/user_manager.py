@@ -24,7 +24,7 @@ def register_user(user_model=None, data=None):
     user_exists = user_model.get_user_by_email(email)
     if user_exists:
         app_logger.warn(f"Erro ao tentar registrar novo usuário. Usuário já existe: {data}")
-        return 403, {'message': f'Erro ao tentar registrar novo usuário. Usuário já existe: {email}'}
+        return 400, {'message': f'Erro ao tentar registrar novo usuário. Usuário já existe: {email}'}
     
     user_id = user_model.create_user(first_name, last_name, country, email, password, MAX_STREAMS)
     if not user_id:

@@ -1,0 +1,31 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Pytest",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${workspaceFolder}/.venv/bin/pytest",  // Ajuste o caminho para o pytest na sua virtualenv
+            "args": [
+                "-v",          // Executa o pytest no modo verbose
+                "--maxfail=1", // Para após o primeiro erro
+                "--disable-warnings"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,  // Permite depurar bibliotecas externas
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"  // Ajusta o caminho do Python
+            }
+        },
+        {
+            "name": "Python Debugger: Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal"
+        }
+    ]
+}

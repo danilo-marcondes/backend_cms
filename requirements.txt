@@ -2,3 +2,4 @@ flask
 pymongo[srv]
 python-dotenv
 flasgger
+pytest

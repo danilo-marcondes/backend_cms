@@ -39,3 +39,8 @@ Swagger:
  ```
     http://localhost:5000/apidocs/
  ```
+
+Testes:
+```
+    pytest -v
+```
